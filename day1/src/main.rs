@@ -6,7 +6,8 @@ use std::path::Path;
 fn main() {
     let args: Vec<String> = env::args().collect();
     println!("{}", args[1]);
-    let proc = match &*args[1] {
+    let mut s = String::new();
+    let vec = match &*args[1] {
         "file" => {
         let path = Path::new(&args[2]);
         let display = path.display();
@@ -19,17 +20,19 @@ fn main() {
         };
 
         // Read the file contents into a string, returns `io::Result<usize>`
-        let mut s = String::new();
         match file.read_to_string(&mut s) {
             Err(_why) => panic!("couldn't read {}", display),
             Ok(_) => print!("{} loaded.\n", display),
         }
-                freq(s.lines().collect::<Vec<&str>>())
+                s.lines().collect::<Vec<&str>>()
                 },
-            "str" => freq(args[2].split(",").collect::<Vec<&str>>()),
+            "str" => args[2].split(",").collect::<Vec<&str>>(),
             _ => panic!("Not enough valid args")
         };
-    println!("{}",proc)
+    let finalfreq =freq(&vec);
+    println!("{}",finalfreq);
+    let repfreq =freq2(&vec);
+    println!("{}",repfreq);
 }
 
 fn car_cdr(s: &str) -> (&str, &str) {
@@ -39,7 +42,7 @@ fn car_cdr(s: &str) -> (&str, &str) {
     }
 }
 
-fn freq(x : Vec<&str>) -> i32 {
+fn freq(x : &Vec<&str>) -> i32 {
     let mut out : i32 = 0;
     for step in x {
         let (sign,num) = car_cdr(step.trim());
@@ -50,5 +53,29 @@ fn freq(x : Vec<&str>) -> i32 {
 			_ => panic!("Invalid input")
 		}
     }
+    out
+}
+
+fn freq2(x : &Vec<&str>) -> i32 {
+    let mut freqs = Vec::new();
+    let mut out = 0;
+    freqs.push(out);
+    'outer: loop {
+        for step in x {
+            out = match freqs.last() {
+                None => panic!(),
+                Some(y) => *y
+            };
+            let (sign,num) = car_cdr(step.trim());
+            let num = num.parse::<i32>().unwrap();
+            out += match sign {
+                "+" => num,
+                "-" => -num,
+                _ => panic!("Invalid input")
+            };
+            if freqs.contains(&out) { break 'outer;};
+            freqs.push(out)
+        };
+    };
     out
 }
