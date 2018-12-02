@@ -30,6 +30,7 @@ fn main() {
             _ => panic!("Not enough valid args")
         };
     println!("{}",chksum(&vec));
+    println!("{}",find_box(&vec));
 }
 
 fn chksum(x : &Vec<&str>) -> i32 {
@@ -49,4 +50,31 @@ fn cnt_occ(occ : &str) -> (bool,bool) {
         cnts[(c as u32 - 'a' as u32) as usize] += 1;
     }
     (cnts.contains(&2), cnts.contains(&3))
+}
+
+fn find_box(y : &Vec<&str>) -> String {
+    let mut cur: String;
+    let mut ret: String;
+    let mut x = y.clone();
+    'wholeloop: loop {
+        cur = x.remove(0).to_string();
+        'outer: for comp in &x {
+            let mut differ = false;
+            ret = cur.clone();
+            for (c,it) in cur.chars().zip(comp.chars()).enumerate() {
+                if it.0 != it.1 {
+                    if !differ {
+                        differ = true;
+                        ret.remove(c);
+                    }
+                    else {
+                        continue 'outer;
+                    }
+                }
+            }
+            break 'wholeloop;
+        }
+    }
+    ret
+
 }
