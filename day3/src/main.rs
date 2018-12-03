@@ -32,6 +32,7 @@ fn main() {
             _ => panic!("Not enough valid args")
         };
     println!("{}",cntoverlap(&vec));
+    println!("{}",finduniquecloth(&vec));
 }
 
 fn parse_line(line : &str) -> (usize, usize, usize, usize, usize) {
@@ -47,7 +48,7 @@ fn parse_line(line : &str) -> (usize, usize, usize, usize, usize) {
     (id, xcoord, ycoord, width, height)
 }
 
-fn cntoverlap(x : &Vec<&str>) -> u32 {
+fn createclothmap(x : &Vec<&str>) -> [[u8; CLOTH_SIZE]; CLOTH_SIZE] {
     let mut cloth = [[0u8; CLOTH_SIZE]; CLOTH_SIZE];
     for l in x {
         let parsed = parse_line(l);
@@ -64,6 +65,11 @@ fn cntoverlap(x : &Vec<&str>) -> u32 {
         //parse_line(l).4,
         //);
     }
+    cloth
+}
+
+fn cntoverlap(x : &Vec<&str>) -> u32 {
+    let cloth = createclothmap(x);
     let mut out :u32 = 0;
     for xc in 0..CLOTH_SIZE {
     for yc in 0..CLOTH_SIZE {
@@ -73,4 +79,29 @@ fn cntoverlap(x : &Vec<&str>) -> u32 {
     }
     }
     out
+}
+
+fn finduniquecloth(x : &Vec<&str>) -> usize {
+    let cloth = createclothmap(x);
+    let mut id = 0; 
+    'clothloop: for l in x {
+        let parsed = parse_line(l);
+        for xoff in 0..parsed.3 {
+            for yoff in 0..parsed.4 {
+                if cloth[parsed.1 + xoff][parsed.2 + yoff] > 1 {
+                    id = parsed.0;
+                    continue 'clothloop;
+                }
+            }
+        }
+        //println!("{} {} {} {} {}", 
+        //parse_line(l).0,
+        //parse_line(l).1,
+        //parse_line(l).2,
+        //parse_line(l).4,
+        //);
+        id = parsed.0;
+        break 'clothloop;
+    }
+    id
 }
