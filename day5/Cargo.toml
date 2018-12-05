@@ -1,0 +1,7 @@
+[package]
+name = "day5"
+version = "0.1.0"
+authors = ["Sam Gonshaw <sam@gonshaw.com>"]
+
+[dependencies]
+unic-char-range = "0.7.0"
