@@ -4,7 +4,8 @@ use std::io::prelude::*;
 use std::path::Path;
 
 const NUM_POINTS : usize = 2000; // Just needs to be bigger than all input lengths
-const GRID_SIZE : usize = 2000; // Just needs to be bigger than all x/y coords max
+const GRID_SIZE : usize = 360; // Just needs to be bigger than all x/y coords max
+const MAX_DISTANCE :usize = (2 * GRID_SIZE) + 1;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -36,27 +37,58 @@ fn main() {
     println!("{}",countneighbours(&map));
 }
 
-fn parse_line(line : &str) -> (u32, u32) {
+fn parse_line(line : &str) -> (usize, usize) {
     let split = line.split(", ").collect::<Vec<&str>>();
-    let x = split[0].parse::<u32>().unwrap();
-    let y = split[1].parse::<u32>().unwrap();
+    let x = split[0].parse::<usize>().unwrap();
+    let y = split[1].parse::<usize>().unwrap();
     (x, y)
 }
 
 // TODO: fill in map from coords.
 //triangle ineq tells me d(x,y) <= |x| + |y|
-fn find_map(x: &Vec<&str>) -> [[usize;GRID_SIZE];GRID_SIZE] {
+fn find_map(x: &Vec<&str>) -> Vec<Vec<usize>> {
     // Initialise all as tied
-    let mut map : [[usize;GRID_SIZE];GRID_SIZE] = [[NUM_POINTS + 1;GRID_SIZE];GRID_SIZE];
-    // TODO: Parse input and sort by norm
-    // TODO: loop through each grid square
-    // TODO: for eahc grid square, due to triangle inequality, loop through and fill in map (maybe...!)
-    map
+    let mut map = vec![vec![(NUM_POINTS, MAX_DISTANCE);GRID_SIZE];GRID_SIZE];
+    for line in x.iter().enumerate() {
+        let curpoint = parse_line(line.1);
+        if curpoint.0 >= GRID_SIZE || curpoint.1 >= GRID_SIZE {
+            panic!("Grid size not big enough");
+        }
+        println!("{}: {:?}", line.0, curpoint);
+        for xc in 0..GRID_SIZE {
+        for yc in 0..GRID_SIZE {
+            let xci: isize = xc as isize;
+            let yci: isize = yc as isize;
+            let cpxi: isize = curpoint.0 as isize;
+            let cpyi: isize = curpoint.1 as isize;
+            let mut distance = ((xci - cpxi).abs() + (yci - cpyi).abs()) as usize;
+            if distance <= map[xc][yc].1 {
+            println!("({},{})={}@{}  {}", xc,yc,map[xc][yc].0, map[xc][yc].1, distance);
+            if distance == map[xc][yc].1 {
+                map[xc][yc].0 = NUM_POINTS;
+                map[xc][yc].1 = distance;
+            }
+            else {
+                map[xc][yc].0 = line.0;
+                map[xc][yc].1 = distance;
+            }
+            }
+        }
+        }
+    }
+    let mut out = vec![vec![NUM_POINTS;GRID_SIZE];GRID_SIZE];
+    for xc in 0..GRID_SIZE {
+    for yc in 0..GRID_SIZE {
+        out[xc][yc] = map[xc][yc].0;
+        println!("({},{})={}", xc,yc,out[xc][yc]);
+    }
+    }
+    out
 }
 
 // Take an array with filled in neighbours and find largest area
 //TODO: test
-fn countneighbours(map: &[[usize;GRID_SIZE];GRID_SIZE]) -> u32 {
+fn countneighbours(map: &Vec<Vec<usize>>) -> u32 {
     // +1th id is the tied i'd.
     let mut nhoods : [u32;NUM_POINTS + 1] = [0; NUM_POINTS + 1];
     // COunt size of neighbourhoods, excluding nhoods touching the edges
