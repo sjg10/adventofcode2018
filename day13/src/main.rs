@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::path::Path;
 
 const GRID_SIZE : usize = 200;
-const MOVES : usize = 1000;
+const MOVES : usize = 100000;
 
 #[derive(Copy, Clone, Debug)]
 enum Direction {
@@ -62,26 +62,44 @@ fn main() {
 
 fn run_games(carts : &Vec<Cart>, grid : &Vec<Vec<Track>>) -> (usize, usize) {
 	let mut curcarts = carts.clone();
-    let mut out = (0,0);
 	'outer:for i in 1..MOVES {
+    	println!("MOVE {} {:?} {}", i, curcarts, curcarts.len());
 		curcarts = move_carts(&curcarts, &grid);
-    	println!("MOVE {} {:?}", i, curcarts);
+    	println!("MOVED {} {:?} {}", i, curcarts, curcarts.len());
+        // Remove carts after moving
+        let mut lastpos = curcarts[0].position;
         for i in 1..curcarts.len() {
-            if curcarts[i].position == curcarts[i - 1].position {
-                out = curcarts[i].position;
-                break 'outer;
+            if curcarts[i].position == lastpos {
+                lastpos = curcarts[i].position;
+                println!("Collision {:?}", curcarts[i].position);
+                curcarts[i].position = (GRID_SIZE, GRID_SIZE);
+                curcarts[i - 1].position = (GRID_SIZE, GRID_SIZE);
+            }
+            else {
+                lastpos = curcarts[i].position;
             }
         }
+    	println!("MOVED-CHECKED {} {:?}", i, curcarts);
+        curcarts.retain(|e| e.position != (GRID_SIZE,GRID_SIZE));
+    	println!("MOVED-CHECKED-CLEANED {} {:?}", i, curcarts);
+        if curcarts.len() <= 1 {
+                break 'outer;
+        }
 	}
-    out
+    curcarts[0].position
 }
 
 fn move_carts(carts : &Vec<Cart>, grid : &Vec<Vec<Track>>) -> Vec<Cart> {
     let mut newcarts = Vec::new();
+    let mut removals : Vec<usize> = Vec::new();
     for i in 0..carts.len() {
+        if removals.contains(&i) {
+            continue;
+        }
         let cart = carts[i];
         let mut newcart = cart.clone();
         // Define new position, and check for collision with yet to move carts
+        let mut collided = false;
         match cart.direction {
             Direction::Left  => {
                 newcart.position.1 -= 1;
@@ -92,7 +110,8 @@ fn move_carts(carts : &Vec<Cart>, grid : &Vec<Vec<Track>>) -> Vec<Cart> {
                 // If we moved right then due to ordering of carts, next cart is only possible collision.
                 if i != (carts.len() - 1) && carts[i + 1].position == newcart.position {
                     println!("Collision: {:?}",newcart.position);
-                    panic!();
+                    collided = true;
+                    removals.push(i + 1);
                 }
                 },
             Direction::Down  => {
@@ -100,7 +119,8 @@ fn move_carts(carts : &Vec<Cart>, grid : &Vec<Vec<Track>>) -> Vec<Cart> {
                 for j in (i + 1)..carts.len() {
                     if carts[j].position == newcart.position {
                     println!("Collision: {:?}",newcart.position);
-                    panic!();
+                    collided = true;
+                    removals.push(j);
                     }
                     if carts[j].position.0 > newcart.position.0 {
                         // Due to ordering we've checked everything
@@ -110,6 +130,10 @@ fn move_carts(carts : &Vec<Cart>, grid : &Vec<Vec<Track>>) -> Vec<Cart> {
             }
             Direction::Up    => newcart.position.0 -= 1, // no carts above , they already moved
         };
+        if collided {
+            // just skip on, effectively removing this cart from the outcome.
+            continue;
+        }
         // Define new direction
         match grid[newcart.position.0][newcart.position.1] {
             Track::Straight => (),
